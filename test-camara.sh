@@ -40,9 +40,9 @@ check() {
 check "Kind cluster '${CLUSTER_NAME}' exists" \
   "kind get clusters 2>/dev/null | grep -q '^${CLUSTER_NAME}$'"
 
-# ─── TEST 2: All pods running ─────────────────────────────────────────────────
-check "All CAMARA pods in Running state" \
-  "[ \$(kubectl get pods -n ${NAMESPACE} --no-headers 2>/dev/null | grep -c 'Running') -ge 4 ]"
+# ─── TEST 2: Services sont de type NodePort ───────────────────────────────────
+check "All CAMARA services are NodePort" \
+  "[ \$(kubectl get svc -n ${NAMESPACE} --no-headers 2>/dev/null | grep -c 'NodePort') -ge 4 ]"
 
 # ─── TEST 3: QoD API health ───────────────────────────────────────────────────
 check "QoD API health returns 200" \

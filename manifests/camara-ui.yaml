@@ -159,7 +159,7 @@ data:
             }
           } catch (e) {
             dot.classList.add('offline');
-            status.textContent = 'UNREACHABLE – check port-forward';
+            status.textContent = 'UNREACHABLE – check NodePort / pod status';
             status.style.color = '#f87171';
           }
         }
@@ -258,4 +258,5 @@ spec:
     - name: http
       port: 3000
       targetPort: 3000
-  type: ClusterIP
+      nodePort: 30300
+  type: NodePort

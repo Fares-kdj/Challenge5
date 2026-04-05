@@ -384,7 +384,7 @@ For each portal, note:
 ```
 
 Choose:
-- **Option 1** — Stop port-forwards only (fastest restart next time)
+- **Option 1** — Scale down pods only (keep cluster, free memory)
 - **Option 2** — Delete CAMARA deployments, keep Kind cluster
 - **Option 3** — Delete entire Kind cluster `camara-lab` (full cleanup)
 
@@ -534,10 +534,8 @@ sudo kill -9 <PID>
 
 ### APIs return 000 / connection refused
 ```bash
-# Re-apply port-forwards manually
-kubectl port-forward svc/qod-api 8083:8080 -n camara &
-kubectl port-forward svc/device-location-api 8084:8080 -n camara &
-kubectl port-forward svc/sim-swap-api 8085:8080 -n camara &
+# Restart deployments (NodePort stays up as long as pods are running)
+kubectl rollout restart deployment -n camara
 ```
 
 ### Not enough memory

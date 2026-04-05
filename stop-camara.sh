@@ -23,42 +23,35 @@ echo -e "${NC}"
 
 echo -e "Choose a cleanup level:"
 echo ""
-echo -e "  ${GREEN}1)${NC} Stop port-forwards only      (fastest restart next time)"
-echo -e "  ${YELLOW}2)${NC} Delete CAMARA pods           (keep Kind cluster)"
-echo -e "  ${RED}3)${NC} Delete entire Kind cluster   (full cleanup)"
+echo -e "  ${GREEN}1)${NC} Scale down pods only        (keep cluster, free memory)"
+echo -e "  ${YELLOW}2)${NC} Delete CAMARA namespace     (keep Kind cluster)"
+echo -e "  ${RED}3)${NC} Delete entire Kind cluster  (full cleanup)"
 echo ""
 read -rp "  Your choice [1/2/3]: " CHOICE
 
 case "$CHOICE" in
   1)
     echo ""
-    echo -e "${YELLOW}Stopping port-forwards...${NC}"
-    pkill -f "kubectl port-forward" 2>/dev/null && \
-      echo -e "${GREEN}  ✓ All port-forwards stopped.${NC}" || \
-      echo -e "${GREEN}  ✓ No port-forwards were running.${NC}"
+    echo -e "${YELLOW}Scaling down CAMARA deployments...${NC}"
+    kubectl scale deployment camara-qod-mock camara-location-mock camara-simswap-mock camara-ui \
+      --replicas=0 -n "${NAMESPACE}" 2>/dev/null && \
+      echo -e "${GREEN}  ✓ All deployments scaled to 0.${NC}" || \
+      echo -e "${YELLOW}  ⚠ Some deployments not found (already stopped?).${NC}"
     echo ""
-    echo -e "${GREEN}Done. To restart: ${YELLOW}./start-camara.sh${NC}"
+    echo -e "${GREEN}Done. To restart: ${YELLOW}kubectl scale deployment --replicas=1 -n ${NAMESPACE} --all${NC}"
+    echo -e "Or run: ${YELLOW}./start-camara.sh${NC}"
     ;;
   2)
     echo ""
-    echo -e "${YELLOW}Stopping port-forwards...${NC}"
-    pkill -f "kubectl port-forward" 2>/dev/null || true
-    echo -e "${GREEN}  ✓ Port-forwards stopped.${NC}"
-
     echo -e "${YELLOW}Deleting CAMARA namespace and all resources...${NC}"
     kubectl delete namespace "${NAMESPACE}" --ignore-not-found=true
     echo -e "${GREEN}  ✓ Namespace '${NAMESPACE}' deleted.${NC}"
-
     echo ""
     echo -e "${GREEN}Done. Kind cluster '${CLUSTER_NAME}' is still running.${NC}"
     echo -e "To restart: ${YELLOW}./start-camara.sh${NC}"
     ;;
   3)
     echo ""
-    echo -e "${YELLOW}Stopping port-forwards...${NC}"
-    pkill -f "kubectl port-forward" 2>/dev/null || true
-    echo -e "${GREEN}  ✓ Port-forwards stopped.${NC}"
-
     echo -e "${YELLOW}Deleting Kind cluster '${CLUSTER_NAME}'...${NC}"
     kind delete cluster --name "${CLUSTER_NAME}" 2>/dev/null && \
       echo -e "${GREEN}  ✓ Cluster '${CLUSTER_NAME}' deleted.${NC}" || \

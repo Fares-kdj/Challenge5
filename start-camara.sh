@@ -142,25 +142,38 @@ for i in $(seq 1 30); do
 done
 echo -e "${GREEN}  ✓ Seed data loaded.${NC}"
 
-# ─── 7. SETUP PORT-FORWARDS ───────────────────────────────────────────────────
+# ─── 7. VERIFY NODEPORT EXPOSURE ──────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[7/7] Setting up port-forwards...${NC}"
-pkill -f "kubectl port-forward" 2>/dev/null || true
-sleep 1
+echo -e "${YELLOW}[7/7] Verifying NodePort exposure...${NC}"
 
-kubectl port-forward --address 0.0.0.0 svc/camara-ui 3000:3000 -n "${NAMESPACE}" >/dev/null 2>&1 &
-echo -e "${GREEN}  ✓ CAMARA Sandbox UI    -> http://localhost:3000${NC}"
+# Retrieve the Kind node IP (the Docker container acting as the K8s node)
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
+HOST_IP="localhost"
 
-kubectl port-forward --address 0.0.0.0 svc/qod-api 8083:8080 -n "${NAMESPACE}" >/dev/null 2>&1 &
-echo -e "${GREEN}  ✓ QoD API              -> http://localhost:8083${NC}"
+echo -e "${GREEN}  ✓ Kind node IP         : ${NODE_IP}${NC}"
+echo -e "${GREEN}  ✓ NodePort services    : bound on all interfaces (0.0.0.0)${NC}"
+echo ""
 
-kubectl port-forward --address 0.0.0.0 svc/device-location-api 8084:8080 -n "${NAMESPACE}" >/dev/null 2>&1 &
-echo -e "${GREEN}  ✓ Device Location API  -> http://localhost:8084${NC}"
+# Confirm services are NodePort
+kubectl get svc -n "${NAMESPACE}" --no-headers | while read line; do
+  SVC=$(echo "$line" | awk '{print $1}')
+  TYPE=$(echo "$line" | awk '{print $3}')
+  PORTS=$(echo "$line" | awk '{print $5}')
+  echo -e "  ${GREEN}✓${NC} $SVC ($TYPE) → $PORTS"
+done
 
-kubectl port-forward --address 0.0.0.0 svc/sim-swap-api 8085:8080 -n "${NAMESPACE}" >/dev/null 2>&1 &
-echo -e "${GREEN}  ✓ SIM Swap API         -> http://localhost:8085${NC}"
-
-sleep 3
+echo ""
+echo -n "  Waiting for NodePorts to respond"
+for i in $(seq 1 30); do
+  C1=$(curl -s -o /dev/null -w "%{http_code}" http://${HOST_IP}:3000        2>/dev/null || echo "000")
+  C2=$(curl -s -o /dev/null -w "%{http_code}" http://${HOST_IP}:8083/camara/quality-on-demand/v0/health 2>/dev/null || echo "000")
+  if [ "$C1" = "200" ] && [ "$C2" = "200" ]; then
+    echo -e " ${GREEN}✓${NC}"
+    break
+  fi
+  echo -n "."
+  sleep 3
+done
 
 # ─── DONE ─────────────────────────────────────────────────────────────────────
 echo ""

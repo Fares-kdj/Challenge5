@@ -40,7 +40,7 @@ What it does automatically:
 - Creates a Kind (Kubernetes-in-Docker) cluster named `camara-lab`
 - Deploys 3 CAMARA mock API servers: QoD + Device Location + SIM Swap
 - Deploys the CAMARA Sandbox UI dashboard
-- Sets up port-forwards so all APIs are accessible from your browser/terminal
+- Exposes all APIs via **NodePort** — accessible directly without port-forwards
 
 ### Step 3: Validate the Installation
 ```bash
@@ -134,10 +134,17 @@ sudo kill -9 <PID>
 
 ### APIs return 000 / connection refused
 ```bash
-# Re-apply port-forwards manually
-kubectl port-forward svc/qod-api 8083:8080 -n camara &
-kubectl port-forward svc/device-location-api 8084:8080 -n camara &
-kubectl port-forward svc/sim-swap-api 8085:8080 -n camara &
+# Verify services are NodePort
+kubectl get svc -n camara
+
+# Check the nodePort values
+kubectl get svc -n camara -o jsonpath='{range .items[*]}{.metadata.name}{" → "}{.spec.ports[0].nodePort}{"\n"}{end}'
+
+# Check pods are running
+kubectl get pods -n camara
+
+# If pods are down, restart them
+kubectl rollout restart deployment -n camara
 ```
 
 ### Not enough memory
